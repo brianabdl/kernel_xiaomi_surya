@@ -1,78 +1,120 @@
-#!/usr/bin/env bash
-export TZ=Asia/Jakarta
-echo "Cloning dependencies"
-git clone --depth=1 https://github.com/SiAlone/kernel_xiaomi_surya/ -b  v8  kernel
-cd kernel
-git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
-git clone --depth=1 https://github.com/stormbreaker-project/AnyKernel3 -b surya AnyKernel
-git clone --depth=1 https://android.googlesource.com/platform/system/libufdt libufdt
-echo "Done"
-IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
-TANGGAL=$(date +"%F-%S")
-START=$(date +"%s")
-export CONFIG_PATH=$PWD/arch/arm64/configs/surya-perf_defconfig
-PATH="${PWD}/clang/bin:$PATH"
+#!/bin/bash
+
+
+# Clone the repositories
+git clone --depth 1 https://gitlab.com/Panchajanya1999/azure-clang.git azure
+git clone --depth 1 -b surya https://github.com/taalojarvi/AnyKernel3
+git clone --depth 1 https://github.com/SiAlone/Loner-Canaries
+
+# Export Environment Variables. 
+export DATE=$(date +"%d-%m-%Y-%I-%M")
+export PATH="$(pwd)/azure/bin:$PATH"
+# export PATH="$TC_DIR/bin:$HOME/gcc-arm/bin${PATH}"
+export CLANG_TRIPLE=aarch64-linux-gnu-
 export ARCH=arm64
-export KBUILD_BUILD_HOST=circleci
-export KBUILD_BUILD_USER="SiAlone"
-chat_id="-1001786450765"
-token="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
-# sticker plox
-function sticker() {
-    curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
-        -d sticker="CAADBQADVAADaEQ4KS3kDsr-OWAUFgQ" \
-        -d chat_id=$chat_id
+# export CROSS_COMPILE=~/gcc-arm64/bin/aarch64-elf-
+# export CROSS_COMPILE_ARM32=~/gcc-arm/bin/arm-eabi-
+export CROSS_COMPILE=aarch64-linux-gnu-
+export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+export LD_LIBRARY_PATH=$TC_DIR/lib
+export KBUILD_BUILD_USER="Loner"
+export USE_HOST_LEX=yes
+export KERNEL_IMG=output/arch/arm64/boot/Image
+export KERNEL_DTBO=output/arch/arm64/boot/dtbo.img
+export KERNEL_DTB=output/arch/arm64/boot/dts/qcom/sdmmagpie.dtb
+export DEFCONFIG=vendor/surya-perf_defconfig
+export ANYKERNEL_DIR=$(pwd)/AnyKernel3/
+export TC_DIR=$(pwd)/azure/
+
+# Telegram API Stuff
+BUILD_START=$(date +"%s")
+export GITHUB_TOKEN=$TOKEN
+export token=$TGKEN
+KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+BOT_MSG_URL="https://api.telegram.org/bot$token/sendMessage"
+BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
+CHATID=-1001786450765
+COMMIT_HEAD=$(git log --oneline -1)
+TERM=xterm
+if [ "$(cat /sys/devices/system/cpu/smt/active)" = "1" ]; then
+		export THREADS=$(expr $(nproc --all) \* 2)
+	else
+		export THREADS=$(nproc --all)
+	fi
+##---------------------------------------------------------##
+
+tg_post_msg() {
+	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$CHATID" \
+	-d "disable_web_page_preview=true" \
+	-d "parse_mode=html" \
+	-d text="$1"
+
 }
-# Send info plox channel
-function sendinfo() {
-    curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
-        -d chat_id="$chat_id" \
-        -d "disable_web_page_preview=true" \
-        -d "parse_mode=html" \
-        -d text="<b>• surya-Stormbreaker Kernel •</b>%0ABuild started on <code>Circle CI</code>%0AFor device <b>Poco x3</b> (RMX1851)%0Abranch <code>$(git rev-parse --abbrev-ref HEAD)</code>(master)%0AUnder commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>%0AUsing compiler: <code>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</code>%0AStarted on <code>$(date)</code>%0A<b>Build Status:</b>#Stable"
+
+##----------------------------------------------------------------##
+
+tg_post_build() {
+	#Post MD5Checksum alongwith for easeness
+	MD5CHECK=$(md5sum "$1" | cut -d' ' -f1)
+
+	#Show the Checksum alongwith caption
+	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
+	-F chat_id="$CHATID"  \
+	-F "disable_web_page_preview=true" \
+	-F "parse_mode=html" \
+	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
 }
-# Push kernel to channel
-function push() {
-    cd AnyKernel
-    ZIP=$(echo *.zip)
-    curl -F document=@$ZIP "https://api.telegram.org/bot$token/sendDocument" \
-        -F chat_id="$chat_id" \
-        -F "disable_web_page_preview=true" \
-        -F "parse_mode=html" \
-        -F caption="Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s). | For <b>Poco x3 (surya)</b> | <b>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</b>"
-}
-# Fin Error
-function finerr() {
-    curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
-        -d chat_id="$chat_id" \
-        -d "disable_web_page_preview=true" \
-        -d "parse_mode=markdown" \
-        -d text="Build threw an error(s)"
+
+##----------------------------------------------------------##
+
+# Create Release Notes
+touch releasenotes.md
+echo -e "This is an Automated Build of Loner Kernel. Flash at your own risk!" > releasenotes.md
+echo -e >> releasenotes.md
+echo -e "Build Information" >> releasenotes.md
+echo -e >> releasenotes.md
+echo -e "Build Server Name: "$RUNNER_NAME >> releasenotes.md
+echo -e "Build ID: "$GITHUB_RUN_ID >> releasenotes.md
+echo -e "Build URL: "$GITHUB_SERVER_URL >> releasenotes.md
+echo -e >> releasenotes.md
+echo -e "Last 5 Commits before Build:-" >> releasenotes.md
+git log --decorate=auto --pretty=reference --graph -n 10 >> releasenotes.md
+cp releasenotes.md $(pwd)/Stratosphere-Canaries/
+
+# Make defconfig
+make $DEFCONFIG -j$THREADS CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=output/
+
+# Make Kernel
+tg_post_msg "<b> Build Started on Github Actions</b>%0A<b>Date : </b><code>$(TZ=Etc/UTC date)</code>%0A<b>Top Commit : </b><code>$COMMIT_HEAD</code>%0A"
+make -j$THREADS CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=output/
+
+# Check if Image.gz-dtb exists. If not, stop executing.
+if ! [ -a $KERNEL_IMG ];
+  then
+    echo "An error has occured during compilation. Please check your code."
+#    tg_post_msg "<b>An error has occured during compilation. Build has failed</b>%0A"
     exit 1
-}
-# Compile plox
-function compile() {
-   make O=out ARCH=arm64 surya-perf_defconfig
-       make -j$(nproc --all) O=out \
-                             ARCH=arm64 \
-			     CC=clang \
-			     CROSS_COMPILE=aarch64-linux-gnu- \
-			     CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-   cp out/arch/arm64/boot/Image.gz-dtb AnyKernel
-   python2 "libufdt/utils/src/mkdtboimg.py" \
-					create "out/arch/arm64/boot/dtbo.img" --page_size=4096 out/arch/arm64/boot/dts/qcom/*.dtbo
-   cp out/arch/arm64/boot/dtbo.img AnyKernel
-}
-# Zipping
-function zipping() {
-    cd AnyKernel || exit 1
-    zip -r9 surya-Stormbreaker-${TANGGAL}.zip *
-    cd .. 
-}
-sticker
-sendinfo
-compile
-zipping
-END=$(date +"%s")
-DIFF=$(($END - $START))
-push
+  fi 
+
+# Make Flashable Zip
+cp "$KERNEL_IMG" "$ANYKERNEL_DIR"
+cp "$KERNEL_DTB" "$ANYKERNEL_DIR"/dtb
+cp "$KERNEL_DTBO" "$ANYKERNEL_DIR"
+cd AnyKernel3
+zip -r9 UPDATE-AnyKernel2.zip * -x README.md LICENSE UPDATE-AnyKernel2.zip zipsigner.jar
+cp UPDATE-AnyKernel2.zip package.zip
+cp UPDATE-AnyKernel2.zip Loner-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip
+BUILD_END=$(date +"%s")
+DIFF=$((BUILD_END - BUILD_START))
+tg_post_build "Loner-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+
+
+# Upload Flashable zip to tmp.ninja and uguu.se
+# curl -i -F files[]=@Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER".zip https://uguu.se/upload.php
+# curl -i -F files[]=@Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER".zip https://tmp.ninja/upload.php?output=text
+
+cp Stratosphere-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip ../Loner-Canaries/
+cd ../Loner-Canaries/
+
+# Upload Flashable Zip to GitHub Releases <3
+gh release create earlyaccess-$DATE "Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER.zip"" -F releasenotes.md -p -t "Loner Kernel: Automated Build"
