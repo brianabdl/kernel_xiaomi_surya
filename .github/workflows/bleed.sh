@@ -1,121 +1,198 @@
 #!/bin/bash
-export TZ=Asia/Jakarta
+#
+# Copyright (C) 2020 azrim.
+# All rights reserved.
 
-# Clone the repositories
-git clone --depth=1 https://gitlab.com/AnggaR96s/clang-gengkapak clang
-git clone --depth 1 -b surya https://github.com/taalojarvi/AnyKernel3
-git clone --depth 1 https://github.com/SiAlone/Loner-Canaries
+# Init
+KERNEL_DIR="${PWD}"
+cd "$KERNEL_DIR" || exit
+DTB_TYPE="single" # define as "single" if want use single file
+KERN_IMG=/root/project/kernel_xiaomi_surya/out/arch/arm64/boot/Image.gz-dtb   # if use single file define as Image.gz-dtb instead
+# KERN_DTB="${KERNEL_DIR}"/out/arch/arm64/boot/dtbo.img       # and comment this variable
+ANYKERNEL="${HOME}"/anykernel
+LOGS="${HOME}"/${CHEAD}.log
 
-# Export Environment Variables. 
-export DATE=$(date +"%d-%m-%Y-%I-%M")
-export PATH="${PWD}/clang/bin:$PATH"
-# export PATH="$TC_DIR/bin:$HOME/gcc-arm/bin${PATH}"
-export CLANG_TRIPLE=aarch64-linux-gnu-
-export ARCH=arm64
-# export CROSS_COMPILE=~/gcc-arm64/bin/aarch64-elf-
-# export CROSS_COMPILE_ARM32=~/gcc-arm/bin/arm-eabi-
-export CROSS_COMPILE=aarch64-linux-gnu-
-export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-export LD_LIBRARY_PATH=$TC_DIR/lib
-export KBUILD_BUILD_HOST=Github
-export KBUILD_BUILD_USER="Loner"
-export USE_HOST_LEX=yes
-export KERNEL_IMG=output/arch/arm64/boot/Image
-export KERNEL_DTBO=output/arch/arm64/boot/dtbo.img
-export KERNEL_DTB=output/arch/arm64/boot/dts/qcom/sdmmagpie.dtb
-export DEFCONFIG=vendor/surya-perf_defconfig
-export ANYKERNEL_DIR=$(pwd)/AnyKernel3/
-export TC_DIR=$(pwd)/clang/
+# Repo URL
+ANYKERNEL_REPO="https://github.com/dekukamikix/anykernel3.git"
+ANYKERNEL_BRANCH="master"
 
-# Telegram API Stuff
-BUILD_START=$(date +"%s")
-export GITHUB_TOKEN=$TOKEN
-export token=$TGKEN
-KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-BOT_MSG_URL="https://api.telegram.org/bot$token/sendMessage"
-BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
-CHATID=-1001786450765
-COMMIT_HEAD=$(git log --oneline -1)
-TERM=xterm
-if [ "$(cat /sys/devices/system/cpu/smt/active)" = "1" ]; then
-		export THREADS=$(expr $(nproc --all) \* 2)
-	else
-		export THREADS=$(nproc --all)
-	fi
-##---------------------------------------------------------##
+# Repo info
+PARSE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+PARSE_ORIGIN="$(git config --get remote.origin.url)"
+COMMIT_POINT="$(git log --pretty=format:'%h : %s' -1)"
+CHEAD="$(git rev-parse --short HEAD)"
+LATEST_COMMIT="[$COMMIT_POINT](https://github.com/fakeriz/kernel_xiaomi_surya/commit/$CHEAD)"
+LOGS_URL="[See Github Build Logs Here](https://circleci.com/gh/fakeriz/kernel_xiaomi_surya/$CIRCLE_BUILD_NUM)"
 
-tg_post_msg() {
-	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$CHATID" \
-	-d "disable_web_page_preview=true" \
-	-d "parse_mode=html" \
-	-d text="$1"
+# Compiler
+mkdir -p "/mnt/workdir/clang"
+COMP_TYPE="clang" # unset if want to use gcc as compiler
+CLANG_DIR="/mnt/workdir/clang"
+CLANG_URL="https://github.com/kdrag0n/proton-clang"
+GCC_DIR="" # Doesn't needed if use proton-clang
+GCC32_DIR="" # Doesn't needed if use proton-clang
+CLANG_FILE="/mnt/workdir/clang.tar.gz"
 
+git clone https://github.com/kdrag0n/proton-clang --depth=1 --single-branch $CLANG_DIR -b master
+
+if [[ "${COMP_TYPE}" =~ "clang" ]]; then
+    CSTRING=$("$CLANG_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+    COMP_PATH="$CLANG_DIR/bin:${PATH}"
+else
+    COMP_PATH="${GCC_DIR}/bin:${GCC32_DIR}/bin:${PATH}"
+fi
+
+# Defconfig
+DEFCONFIG="surya-perf_defconfig"
+REGENERATE_DEFCONFIG="" # unset if don't want to regenerate defconfig
+
+# Telegram
+CHATID="-1001786450765" # Group/channel chatid (use rose/userbot to get it)
+TELEGRAM_TOKEN="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
+
+# Export Telegram.sh
+TELEGRAM_FOLDER="${HOME}"/telegram
+if ! [ -d "${TELEGRAM_FOLDER}" ]; then
+    git clone https://github.com/fabianonline/telegram.sh/ "${TELEGRAM_FOLDER}"
+fi
+
+TELEGRAM="${TELEGRAM_FOLDER}"/telegram
+tg_cast() {
+	curl -s -X POST https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage -d disable_web_page_preview="true" -d chat_id="$CHATID" -d "parse_mode=MARKDOWN" -d text="$(
+		for POST in "${@}"; do
+			echo "${POST}"
+		done
+	)" &> /dev/null
+}
+tg_ship() {
+    "${TELEGRAM}" -f "${ZIPNAME}" -t "${TELEGRAM_TOKEN}" -c "${CHATID}" -H \
+    "$(
+                for POST in "${@}"; do
+                        echo "${POST}"
+                done
+    )"
+}
+tg_fail() {
+    "${TELEGRAM}" -f "${LOGS}" -t "${TELEGRAM_TOKEN}" -c "${CHATID}" -H \
+    "$(
+                for POST in "${@}"; do
+                        echo "${POST}"
+                done
+    )"
 }
 
-##----------------------------------------------------------------##
-
-tg_post_build() {
-	#Post MD5Checksum alongwith for easeness
-	MD5CHECK=$(md5sum "$1" | cut -d' ' -f1)
-
-	#Show the Checksum alongwith caption
-	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
-	-F chat_id="$CHATID"  \
-	-F "disable_web_page_preview=true" \
-	-F "parse_mode=html" \
-	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
+# Versioning
+versioning() {
+    cat arch/arm64/configs/"${DEFCONFIG}" | grep CONFIG_LOCALVERSION= | tee /mnt/workdir/name.sh
+    sed -i 's/-Loner-//g' /mnt/workdir/name.sh
+    source /mnt/workdir/name.sh
 }
 
-##----------------------------------------------------------##
+# Costumize
+versioning
+KERNEL="Loner-Test"
+DEVICE="Surya"
+KERNELTYPE="Rev.0.1"
+KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}-$(date +%y%m%d-%H%M)"
+TEMPZIPNAME="${KERNELNAME}-unsigned.zip"
+ZIPNAME="${KERNELNAME}.zip"
 
-# Create Release Notes
-touch releasenotes.md
-echo -e "This is an Automated Build of Loner Kernel. Flash at your own risk!" > releasenotes.md
-echo -e >> releasenotes.md
-echo -e "Build Information" >> releasenotes.md
-echo -e >> releasenotes.md
-echo -e "Build Server Name: "$RUNNER_NAME >> releasenotes.md
-echo -e "Build ID: "$GITHUB_RUN_ID >> releasenotes.md
-echo -e "Build URL: "$GITHUB_SERVER_URL >> releasenotes.md
-echo -e >> releasenotes.md
-echo -e "Last 5 Commits before Build:-" >> releasenotes.md
-git log --decorate=auto --pretty=reference --graph -n 10 >> releasenotes.md
-cp releasenotes.md $(pwd)/Loner-Canaries/
+# Regenerating Defconfig
+regenerate() {
+    cp out/.config arch/arm64/configs/"${DEFCONFIG}"
+    git add arch/arm64/configs/"${DEFCONFIG}"
+    git commit -m "defconfig: Regenerate"
+}
 
-# Make defconfig
-make $DEFCONFIG -j$THREADS CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=output/
+# Build Failed
+build_failed() {
+	    END=$(date +"%s")
+	    DIFF=$(( END - START ))
+	    echo -e "Kernel compilation failed, See build log to fix errors"
+	    tg_fail "Build for ${DEVICE} <b>failed</b> in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
+	    exit 1
+}
 
-# Make Kernel
-tg_post_msg "<b> Build Started on Github Actions</b>%0A<b>Date : </b><code>$(TZ=Etc/UTC date)</code>%0A<b>Top Commit : </b><code>$COMMIT_HEAD</code>%0A"
-make -j$THREADS CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=output/
+# Building
+makekernel() {
+    sed -i "s/${KERNELTYPE}/${KERNELTYPE}-TEST/g" "${KERNEL_DIR}/arch/arm64/configs/${DEFCONFIG}"
+    echo "fakeriz@MacBook-Pro-2012" > "$KERNEL_DIR"/.builderdata
+    export PATH="${COMP_PATH}"
+    make O=out ARCH=arm64 ${DEFCONFIG}
+    if [[ "${REGENERATE_DEFCONFIG}" =~ "true" ]]; then
+        regenerate
+    fi
+    if [[ "${COMP_TYPE}" =~ "clang" ]]; then
+        make -j$(nproc --all) CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out ARCH=arm64 LLVM=1 2>&1 | tee "$LOGS"
+    else
+      	make -j$(nproc --all) O=out ARCH=arm64 CROSS_COMPILE="${GCC_DIR}/bin/aarch64-elf-" CROSS_COMPILE_ARM32="${GCC32_DIR}/bin/arm-eabi-"
+    fi
+    # Check If compilation is success
+    packingkernel
+}
 
-# Check if Image.gz-dtb exists. If not, stop executing.
-if ! [ -a $KERNEL_IMG ];
-  then
-    echo "An error has occured during compilation. Please check your code."
-#    tg_post_msg "<b>An error has occured during compilation. Build has failed</b>%0A"
-    exit 1
-  fi 
+# Packing kranul
+packingkernel() {
+    # Copy compiled kernel
+    if [ -d "${ANYKERNEL}" ]; then
+        rm -rf "${ANYKERNEL}"
+    fi
+    git clone "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" "${ANYKERNEL}"
+    if ! [ -f /root/project/kernel_xiaomi_surya/out/arch/arm64/boot/Image.gz-dtb ]; then
+        build_failed
+    fi
+    cp /root/project/kernel_xiaomi_surya/out/arch/arm64/boot/Image.gz-dtb /root/anykernel/Image.gz-dtb
+    : 'if ! [ -f "${KERN_IMG}" ]; then
+        build_failed
+    fi
+    if ! [ -f "${KERN_DTB}" ]; then
+        build_failed
+    fi
+    if [[ "${DTB_TYPE}" =~ "single" ]]; then
+        cp "${KERN_IMG}" "${ANYKERNEL}"/Image.gz-dtb
+    else
+        cp "${KERN_IMG}" "${ANYKERNEL}"/Image.gz-dtb
+        cp "${KERN_DTB}" "${ANYKERNEL}"/dtbo.img
+    fi
+    '
 
-# Make Flashable Zip
-cp "$KERNEL_IMG" "$ANYKERNEL_DIR"
-cp "$KERNEL_DTB" "$ANYKERNEL_DIR"/dtb
-cp "$KERNEL_DTBO" "$ANYKERNEL_DIR"
-cd AnyKernel3
-zip -r9 UPDATE-AnyKernel2.zip * -x README.md LICENSE UPDATE-AnyKernel2.zip zipsigner.jar
-cp UPDATE-AnyKernel2.zip package.zip
-cp UPDATE-AnyKernel2.zip Loner-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip
-BUILD_END=$(date +"%s")
-DIFF=$((BUILD_END - BUILD_START))
-tg_post_build "Loner-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+    # Zip the kernel, or fail
+    cd "${ANYKERNEL}" || exit
+    zip -r9 "${TEMPZIPNAME}" ./*
 
+    # Sign the zip before sending it to Telegram
+    curl -sLo zipsigner-4.0.jar https://raw.githubusercontent.com/baalajimaestro/AnyKernel3/master/zipsigner-4.0.jar
+    java -jar zipsigner-4.0.jar "${TEMPZIPNAME}" "${ZIPNAME}"
 
-# Upload Flashable zip to tmp.ninja and uguu.se
-# curl -i -F files[]=@Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER".zip https://uguu.se/upload.php
-# curl -i -F files[]=@Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER".zip https://tmp.ninja/upload.php?output=text
+    END=$(date +"%s")
+    DIFF=$(( END - START ))
 
-cp LonerTest-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip ../Loner-Canaries/
-cd ../Loner-Canaries/
+    # Ship it to the CI channel
+    tg_ship "<b>-------- Build $CIRCLE_BUILD_NUM Succeeded --------</b>" \
+            "" \
+            "<b>Device:</b> ${DEVICE}" \
+            "<b>Build ver:</b> ${KERNELTYPE}" \
+            "<b>HEAD Commit:</b> ${CHEAD}" \
+            "<b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60))" \
+            "" \
+            "Leave a comment below if encountered any bugs!"
+}
 
-# Upload Flashable Zip to GitHub Releases <3
-# gh release create earlyaccess-$DATE "LonerTest-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER.zip"" -F releasenotes.md -p -t "Loner Kernel: Automated Build"
+# Starting
+NOW=$(date +%d/%m/%Y-%H:%M)
+START=$(date +"%s")
+tg_cast "*CI Build $GITHUB_RUN_NUMBER Triggered*" \
+	"Compiling with *$(nproc --all)* CPUs" \
+	"-----------------------------------------" \
+	"*Compiler ver:* ${CSTRING}" \
+	"*Device:* ${DEVICE}" \
+	"*Kernel name:* ${KERNEL}" \
+	"*Build ver:* ${KERNELTYPE}" \
+	"*Linux version:* $(make kernelversion)" \
+	"*Branch:* ${CIRCLE_BRANCH}" \
+	"*Clocked at:* ${NOW}" \
+	"*Latest commit:* ${LATEST_COMMIT}" \
+ 	"------------------------------------------" \
+	"${LOGS_URL}"
+
+makekernel
