@@ -78,22 +78,6 @@ build_failed() {
 	    tg_fail "Build for ${DEVICE} <b>failed</b> in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
 	    exit 1
 }
-# Starting
-NOW=$(date +%d/%m/%Y-%H:%M)
-START=$(date +"%s")
-tg_cast "*CI Build #$CIRCLE_BUILD_NUM Triggered*" \
-	"Compiling with *$(nproc --all)* CPUs" \
-	"-----------------------------------------" \
-	"*Compiler ver:* ${CSTRING}" \
-	"*Device:* ${DEVICE}" \
-	"*Kernel name:* ${KERNEL}" \
-	"*Build ver:* ${KERNELTYPE}" \
-	"*Linux version:* $(make kernelversion)" \
-	"*Branch:* ${CIRCLE_BRANCH}" \
-	"*Clocked at:* ${NOW}" \
-	"*Latest commit:* ${LATEST_COMMIT}" \
- 	"------------------------------------------" \
-	"${LOGS_URL}"
 
 # sticker plox
 function sticker() {
@@ -147,6 +131,23 @@ function zipping() {
     zip -r9 surya-Stormbreaker-${TANGGAL}.zip *
     cd .. 
 }
+# Starting
+NOW=$(date +%d/%m/%Y-%H:%M)
+START=$(date +"%s")
+tg_cast "*CI Build #$CIRCLE_BUILD_NUM Triggered*" \
+	"Compiling with *$(nproc --all)* CPUs" \
+	"-----------------------------------------" \
+	"*Compiler ver:* ${CSTRING}" \
+	"*Device:* ${DEVICE}" \
+	"*Kernel name:* ${KERNEL}" \
+	"*Build ver:* ${KERNELTYPE}" \
+	"*Linux version:* $(make kernelversion)" \
+	"*Branch:* ${CIRCLE_BRANCH}" \
+	"*Clocked at:* ${NOW}" \
+	"*Latest commit:* ${LATEST_COMMIT}" \
+ 	"------------------------------------------" \
+	"${LOGS_URL}"
+
 sticker
 sendinfo
 compile
