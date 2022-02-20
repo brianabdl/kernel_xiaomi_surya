@@ -22,12 +22,46 @@ KERNELTYPE="rev.0.1"
 KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}-$(date +%y%m%d-%H%M)"
 TEMPZIPNAME="${KERNELNAME}-unsigned.zip"
 ZIPNAME="${KERNELNAME}.zip"
-
 # Telegram
 chat_id="-1001786450765" # Group/channel chatid (use rose/userbot to get it)
 token="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
-CHATID="${chat_id}"
-TELEGRAM_TOKEN="${token}"
+
+# Export Telegram.sh
+TELEGRAM_FOLDER="${HOME}"/telegram
+if ! [ -d "${TELEGRAM_FOLDER}" ]; then
+    git clone https://github.com/fabianonline/telegram.sh/ "${TELEGRAM_FOLDER}"
+fi
+
+TELEGRAM="${TELEGRAM_FOLDER}"/telegram
+
+# Starting
+NOW=$(date +%d/%m/%Y-%H:%M)
+START=$(date +"%s")
+sendinfo "*CI Build #$CIRCLE_BUILD_NUM Triggered*" \
+	"Compiling with *$(nproc --all)* CPUs" \
+	"-----------------------------------------" \
+	"*Compiler ver:* ${CSTRING}" \
+	"*Device:* ${DEVICE}" \
+	"*Kernel name:* ${KERNEL}" \
+	"*Build ver:* ${KERNELTYPE}" \
+	"*Linux version:* $(make kernelversion)" \
+	"*Branch:* ${CIRCLE_BRANCH}" \
+	"*Clocked at:* ${NOW}" \
+	"*Latest commit:* ${LATEST_COMMIT}" \
+ 	"------------------------------------------" \
+	"${LOGS_URL}"
+finerr "END=$(date +"%s")" \
+	"DIFF=$(( END - START ))" \
+	"Kernel compilation failed, See build log to fix errors" \
+	"Build for ${DEVICE} *failed* in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
+tg_ship "<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b>" \
+        "" \
+        "<b>Device:</b> ${DEVICE}" \
+        "<b>Build ver:</b> ${KERNELTYPE}" \
+        "<b>HEAD Commit:</b> ${CHEAD}" \
+        "<b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60))" \
+        "" \
+        "Try it and give me some thoughts!"
 
 # sticker plox
 function sticker() {
@@ -41,19 +75,11 @@ function sendinfo() {
         -d chat_id="$chat_id" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=MARKDOWN" \
-        -d text="*CI Build #$CIRCLE_BUILD_NUM Triggered*" \
-	"Compiling with *$(nproc --all)* CPUs" \
-	"-----------------------------------------" \
-	"*Compiler ver:* ${CSTRING}" \
-	"*Device:* ${DEVICE}" \
-	"*Kernel name:* ${KERNEL}" \
-	"*Build ver:* ${KERNELTYPE}" \
-	"*Linux version:* $(make kernelversion)" \
-	"*Branch:* ${CIRCLE_BRANCH}" \
-	"*Clocked at:* ${NOW}" \
-	"*Latest commit:* ${LATEST_COMMIT}" \
- 	"------------------------------------------" \
-	"${LOGS_URL}"
+        -d text="$(
+		for POST in "${@}"; do
+			echo "${POST}"
+		done
+	)" &> /dev/null
 }
 # Push kernel to channel
 function push() {
@@ -63,15 +89,23 @@ function push() {
         -F chat_id="$chat_id" \
         -F "disable_web_page_preview=true" \
         -F "parse_mode=html" \
-        -F caption="Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s). | For <b>Poco x3 (surya)</b> | <b>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</b>"
+        -F caption="$(
+		for POST in "${@}"; do
+			echo "${POST}"
+		done
+	)" &> /dev/null
 }
-# Fin Error
+# Finerror
 function finerr() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
         -d chat_id="$chat_id" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=markdown" \
-        -d text="Build threw an error(s)"
+        -d text="$(
+		for POST in "${@}"; do
+			echo "${POST}"
+		done
+	)" &> /dev/null
     exit 1
 }
 # Compile plox
