@@ -12,18 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup env
-        run: apt-get -y update && apt-get -y upgrade && apt-get -y install bc build-essential zip curl libstdc++6 git wget python gcc clang libssl-dev repo rsync flex bison neofetch github-cli
+        run: pacman -Syu --needed --noconfirm wget base-devel xmlto inetutils bc cpio python-sphinx python-sphinx_rtd_theme graphviz imagemagick git python2 python zip github-cli
       - name: Build Loner Kernel
         run: |
           export TOKEN=${AUTH_TOKEN}
           export TGKEN=${TELEGRAM_TOKEN}
-          git clone https://github.com/akhilnarang/scripts && cd scripts && bash setup/android_build_env.sh && cd ..
-          mkdir kernul
-          cd kernul
           bash .github/workflows/bleed.sh
         env:
           AUTH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          TELEGRAM_TOKEN: 5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8}
+          TELEGRAM_TOKEN: 5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8
       - name: Store Kernel Package as Artifact
         uses: actions/upload-artifact@v2
         with:
