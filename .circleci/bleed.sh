@@ -43,7 +43,7 @@ else
 fi
 
 # Defconfig
-DEFCONFIG="vendor/surya-perf_defconfig"
+DEFCONFIG="surya-perf_defconfig"
 REGENERATE_DEFCONFIG="" # unset if don't want to regenerate defconfig
 
 # Telegram
