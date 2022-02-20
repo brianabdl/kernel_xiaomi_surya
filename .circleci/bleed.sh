@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+export TZ=Asia/Jakarta
 echo "Cloning dependencies"
-neofetch
 git clone --depth=1 https://github.com/SiAlone/kernel_xiaomi_surya/ -b  v8  kernel
 cd kernel
 git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
@@ -16,15 +16,33 @@ export ARCH=arm64
 export KBUILD_BUILD_HOST=circleci
 export KBUILD_BUILD_USER="SiAlone"
 chat_id="-1001786450765"
+CHATID="-1001786450765"
 token="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
-
+TGKEN="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
+COMMIT_HEAD=$(git log --oneline -1)
+BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
+COMMIT_HEAD=$(git log --oneline -1)
 KERNEL="StormBreaker-Test"
 DEVICE="Surya"
-KERNELTYPE="$CONFIG_LOCALVERSION"
+KERNELTYPE="Rev.0.1"
 KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}-$(date +%y%m%d-%H%M)"
 TEMPZIPNAME="${KERNELNAME}-unsigned.zip"
 ZIPNAME="${KERNELNAME}.zip"
 
+##----------------------------------------------------------------##
+tg_post_build() {
+	#Post MD5Checksum alongwith for easeness
+	MD5CHECK=$(md5sum "$1" | cut -d' ' -f1)
+	cd AnyKernel
+	ZIP=$(echo *.zip)
+	#Show the Checksum alongwith caption
+	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
+	-F chat_id="$CHATID"  \
+	-F "disable_web_page_preview=true" \
+	-F "parse_mode=html" \
+	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
+}
+##----------------------------------------------------------------##
 # sticker plox
 function sticker() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
@@ -83,4 +101,4 @@ compile
 zipping
 END=$(date +"%s")
 DIFF=$(($END - $START))
-push
+tg_post_build "$ZIPNAME.zip" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
