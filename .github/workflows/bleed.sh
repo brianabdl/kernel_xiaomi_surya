@@ -2,13 +2,13 @@
 
 
 # Clone the repositories
-git clone --depth 1 https://gitlab.com/Panchajanya1999/azure-clang.git azure
+git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
 git clone --depth 1 -b surya https://github.com/taalojarvi/AnyKernel3
 git clone --depth 1 https://github.com/SiAlone/Loner-Canaries
 
 # Export Environment Variables. 
 export DATE=$(date +"%d-%m-%Y-%I-%M")
-export PATH="$(pwd)/azure/bin:$PATH"
+export PATH="${PWD}/clang/bin:$PATH"
 # export PATH="$TC_DIR/bin:$HOME/gcc-arm/bin${PATH}"
 export CLANG_TRIPLE=aarch64-linux-gnu-
 export ARCH=arm64
@@ -17,6 +17,7 @@ export ARCH=arm64
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 export LD_LIBRARY_PATH=$TC_DIR/lib
+export KBUILD_BUILD_HOST=Github
 export KBUILD_BUILD_USER="Loner"
 export USE_HOST_LEX=yes
 export KERNEL_IMG=output/arch/arm64/boot/Image
@@ -24,7 +25,7 @@ export KERNEL_DTBO=output/arch/arm64/boot/dtbo.img
 export KERNEL_DTB=output/arch/arm64/boot/dts/qcom/sdmmagpie.dtb
 export DEFCONFIG=vendor/surya-perf_defconfig
 export ANYKERNEL_DIR=$(pwd)/AnyKernel3/
-export TC_DIR=$(pwd)/azure/
+export TC_DIR=$(pwd)/clang/
 
 # Telegram API Stuff
 BUILD_START=$(date +"%s")
