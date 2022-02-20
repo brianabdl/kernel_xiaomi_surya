@@ -16,33 +16,7 @@ export ARCH=arm64
 export KBUILD_BUILD_HOST=circleci
 export KBUILD_BUILD_USER="SiAlone"
 chat_id="-1001786450765"
-CHATID="-1001786450765"
 token="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
-TGKEN="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
-COMMIT_HEAD=$(git log --oneline -1)
-BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
-COMMIT_HEAD=$(git log --oneline -1)
-KERNEL="StormBreaker-Test"
-DEVICE="Surya"
-KERNELTYPE="Rev.0.1"
-KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}-$(date +%y%m%d-%H%M)"
-TEMPZIPNAME="${KERNELNAME}-unsigned.zip"
-ZIPNAME="${KERNELNAME}.zip"
-
-##----------------------------------------------------------------##
-tg_post_build() {
-	#Post MD5Checksum alongwith for easeness
-	MD5CHECK=$(md5sum "$1" | cut -d' ' -f1)
-	cd AnyKernel
-	ZIP=$(echo *.zip)
-	#Show the Checksum alongwith caption
-	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
-	-F chat_id="$CHATID"  \
-	-F "disable_web_page_preview=true" \
-	-F "parse_mode=html" \
-	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
-}
-##----------------------------------------------------------------##
 # sticker plox
 function sticker() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
@@ -55,7 +29,7 @@ function sendinfo() {
         -d chat_id="$chat_id" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=html" \
-        -d text="<b>CI Build $CIRCLE_BUILD_NUM Triggered</b>%0ACompiling with <b>$(nproc --all)</b> CPUs%0A-----------------------------------------%0A<b>Compiler rev:</b> ${CSTRING}%0A<b>Device:</b> ${DEVICE}%0A<b>Kernel name:</b> ${KERNEL}%0A<b>Build ver:</b> ${KERNELTYPE}%0A<b>Linux version:</b> $(make kernelversion)%0A<b>Branch:</b> ${CIRCLE_BRANCH}%0A<b>Clocked at:</b> ${NOW}%0A</b>Latest commit:</b> ${LATEST_COMMIT}%0A------------------------------------------%0A${LOGS_URL}"
+        -d text="<b>• surya-Stormbreaker Kernel •</b>%0ABuild started on <code>Circle CI</code>%0AFor device <b>Poco x3</b> (RMX1851)%0Abranch <code>$(git rev-parse --abbrev-ref HEAD)</code>(master)%0AUnder commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>%0AUsing compiler: <code>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</code>%0AStarted on <code>$(date)</code>%0A<b>Build Status:</b>#Stable"
 }
 # Push kernel to channel
 function push() {
@@ -65,7 +39,7 @@ function push() {
         -F chat_id="$chat_id" \
         -F "disable_web_page_preview=true" \
         -F "parse_mode=html" \
-        -F caption="<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b>%0A%0A<b>Device:</b> ${DEVICE}%0A<b>Build ver:</b> ${KERNELTYPE}%0A<b>HEAD Commit:</b> ${CHEAD}%0A<b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60))%0A%0ATry it and give me some thoughts!"
+        -F caption="Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s). | For <b>Poco x3 (surya)</b> | <b>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</b>"
 }
 # Fin Error
 function finerr() {
@@ -92,7 +66,7 @@ function compile() {
 # Zipping
 function zipping() {
     cd AnyKernel || exit 1
-    zip -r9 ${ZIPNAME}.zip *
+    zip -r9 surya-Stormbreaker-${TANGGAL}.zip *
     cd .. 
 }
 sticker
@@ -101,4 +75,4 @@ compile
 zipping
 END=$(date +"%s")
 DIFF=$(($END - $START))
-tg_post_build "$ZIPNAME.zip" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+push
