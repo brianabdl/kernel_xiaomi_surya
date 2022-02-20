@@ -12,11 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup env
-        run: pacman -Syu --needed --noconfirm wget bc build-essential zip curl libstdc++6 git wget python gcc clang libssl-dev repo rsync flex bison neofetch github-cli
+        run: apt-get -y update && apt-get -y upgrade && apt-get -y install bc build-essential zip curl libstdc++6 git wget python gcc clang libssl-dev repo rsync flex bison neofetch github-cli
       - name: Build Loner Kernel
         run: |
           export TOKEN=${AUTH_TOKEN}
           export TGKEN=${TELEGRAM_TOKEN}
+          git clone https://github.com/akhilnarang/scripts && cd scripts && bash setup/android_build_env.sh && cd ..
+          mkdir kernul
+          cd kernul
           bash .github/workflows/bleed.sh
         env:
           AUTH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
