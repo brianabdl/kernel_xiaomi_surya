@@ -14,28 +14,8 @@ PATH="${PWD}/clang/bin:$PATH"
 export ARCH=arm64
 export KBUILD_BUILD_HOST=circleci
 export KBUILD_BUILD_USER="SiAlone"
-
-# Info
-KERNEL="StormBreaker-Test"
-DEVICE="Surya"
-KERNELTYPE="rev.0.1"
-KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}-$(date +%y%m%d-%H%M)"
-TEMPZIPNAME="${KERNELNAME}-unsigned.zip"
-ZIPNAME="${KERNELNAME}.zip"
-# Telegram
-chat_id="-1001786450765" # Group/channel chatid (use rose/userbot to get it)
+chat_id="-1001786450765"
 token="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
-
-# Export Telegram.sh
-TELEGRAM_FOLDER="${HOME}"/telegram
-if ! [ -d "${TELEGRAM_FOLDER}" ]; then
-    git clone https://github.com/fabianonline/telegram.sh/ "${TELEGRAM_FOLDER}"
-fi
-
-TELEGRAM="${TELEGRAM_FOLDER}"/telegram
-
-
-
 # sticker plox
 function sticker() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
@@ -47,26 +27,9 @@ function sendinfo() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
         -d chat_id="$chat_id" \
         -d "disable_web_page_preview=true" \
-        -d "parse_mode=MARKDOWN" \
-        -d text="$(
-		for POST in "${@}"; do
-			echo "${POST}"
-		done
-	)" &> /dev/null
+        -d "parse_mode=html" \
+        -d text="<b><b>CI Build $CIRCLE_BUILD_NUM Triggered</b>%0ACompiling with <b>$(nproc --all)</b> CPUs%0A-----------------------------------------%0A<b>Compiler rev:</b> ${CSTRING}%0A<b>Device:</b> ${DEVICE}%0A<b>Kernel name:</b> ${KERNEL}%0A<b>Build ver:</b> ${KERNELTYPE}%0A<b>Linux version:</b> $(make kernelversion)%0A<b>Branch:</b> ${CIRCLE_BRANCH}%0A<b>Clocked at:</b> ${NOW}%0A</b>Latest commit:</b> ${LATEST_COMMIT}%0A------------------------------------------%0A${LOGS_URL}"
 }
-sendinfo "*CI Build #$CIRCLE_BUILD_NUM Triggered*" \
-	"Compiling with *$(nproc --all)* CPUs" \
-	"-----------------------------------------" \
-	"*Compiler ver:* ${CSTRING}" \
-	"*Device:* ${DEVICE}" \
-	"*Kernel name:* ${KERNEL}" \
-	"*Build ver:* ${KERNELTYPE}" \
-	"*Linux version:* $(make kernelversion)" \
-	"*Branch:* ${CIRCLE_BRANCH}" \
-	"*Clocked at:* ${NOW}" \
-	"*Latest commit:* ${LATEST_COMMIT}" \
- 	"------------------------------------------" \
-	"${LOGS_URL}"
 # Push kernel to channel
 function push() {
     cd AnyKernel
@@ -75,37 +38,17 @@ function push() {
         -F chat_id="$chat_id" \
         -F "disable_web_page_preview=true" \
         -F "parse_mode=html" \
-        -F caption="$(
-		for POST in "${@}"; do
-			echo "${POST}"
-		done
-	)" &> /dev/null
+        -F caption="<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b> |  | <b>Device:</b> ${DEVICE} | <b>Build ver:</b> ${KERNELTYPE} | <b>HEAD Commit:</b> ${CHEAD} | <b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60)) |  | Try it and give me some thoughts!"
 }
-push "<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b>" \
-        "" \
-        "<b>Device:</b> ${DEVICE}" \
-        "<b>Build ver:</b> ${KERNELTYPE}" \
-        "<b>HEAD Commit:</b> ${CHEAD}" \
-        "<b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60))" \
-        "" \
-        "Try it and give me some thoughts!"
-# Finerror
+# Fin Error
 function finerr() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
         -d chat_id="$chat_id" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=markdown" \
-        -d text="$(
-		for POST in "${@}"; do
-			echo "${POST}"
-		done
-	)" &> /dev/null
+        -d text="Build threw an error(s)"
     exit 1
 }
-finerr "END=$(date +"%s")" \
-	"DIFF=$(( END - START ))" \
-	"Kernel compilation failed, See build log to fix errors" \
-	"Build for ${DEVICE} *failed* in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
 # Compile plox
 function compile() {
    make O=out ARCH=arm64 surya-perf_defconfig
@@ -122,7 +65,7 @@ function compile() {
 # Zipping
 function zipping() {
     cd AnyKernel || exit 1
-    zip -r9 ${ZIPNAME}.zip *
+    zip -r9 surya-Stormbreaker-${TANGGAL}.zip *
     cd .. 
 }
 sticker
