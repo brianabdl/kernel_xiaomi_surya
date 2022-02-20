@@ -17,7 +17,7 @@ jobs:
         run: |
           export TOKEN=${AUTH_TOKEN}
           export TGKEN=${TELEGRAM_TOKEN}
-          bash gi-build.sh
+          bash .github/workflows/bleed.sh
         env:
           AUTH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           TELEGRAM_TOKEN: 5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8}
