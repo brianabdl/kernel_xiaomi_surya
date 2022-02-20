@@ -36,29 +36,6 @@ if ! [ -d "${TELEGRAM_FOLDER}" ]; then
 fi
 
 TELEGRAM="${TELEGRAM_FOLDER}"/telegram
-tg_cast() {
-	curl -s -X POST https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage -d disable_web_page_preview="true" -d chat_id="$CHATID" -d "parse_mode=MARKDOWN" -d text="$(
-		for POST in "${@}"; do
-			echo "${POST}"
-		done
-	)" &> /dev/null
-}
-tg_ship() {
-    "${TELEGRAM}" -f "${ZIPNAME}" -t "${TELEGRAM_TOKEN}" -c "${CHATID}" -H \
-    "$(
-                for POST in "${@}"; do
-                        echo "${POST}"
-                done
-    )"
-}
-tg_fail() {
-    "${TELEGRAM}" -f "${LOGS}" -t "${TELEGRAM_TOKEN}" -c "${CHATID}" -H \
-    "$(
-                for POST in "${@}"; do
-                        echo "${POST}"
-                done
-    )"
-}
 
 # Ship it to the CI channel
 tg_ship "<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b>" \
@@ -78,7 +55,6 @@ build_failed() {
 	    tg_fail "Build for ${DEVICE} <b>failed</b> in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
 	    exit 1
 }
-
 # sticker plox
 function sticker() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
@@ -93,6 +69,14 @@ function sendinfo() {
         -d "parse_mode=html" \
         -d text="<b>• surya-Stormbreaker Kernel •</b>%0ABuild started on <code>Circle CI</code>%0AFor device <b>Poco x3</b> (RMX1851)%0Abranch <code>$(git rev-parse --abbrev-ref HEAD)</code>(master)%0AUnder commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>%0AUsing compiler: <code>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</code>%0AStarted on <code>$(date)</code>%0A<b>Build Status:</b>#Stable"
 }
+tg_ship() {
+    "${TELEGRAM}" -f "${ZIPNAME}" -t "${TELEGRAM_TOKEN}" -c "${CHATID}" -H \
+    "$(
+                for POST in "${@}"; do
+                        echo "${POST}"
+                done
+    )"
+}
 # Push kernel to channel
 function push() {
     cd AnyKernel
@@ -103,6 +87,13 @@ function push() {
         -F "parse_mode=html" \
         -F caption="Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s). | For <b>Poco x3 (surya)</b> | <b>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</b>"
 }
+tg_cast() {
+	curl -s -X POST https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage -d disable_web_page_preview="true" -d chat_id="$CHATID" -d "parse_mode=MARKDOWN" -d text="$(
+		for POST in "${@}"; do
+			echo "${POST}"
+		done
+	)" &> /dev/null
+}
 # Fin Error
 function finerr() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
@@ -111,6 +102,14 @@ function finerr() {
         -d "parse_mode=markdown" \
         -d text="Build threw an error(s)"
     exit 1
+}
+tg_fail() {
+    "${TELEGRAM}" -f "${LOGS}" -t "${TELEGRAM_TOKEN}" -c "${CHATID}" -H \
+    "$(
+                for POST in "${@}"; do
+                        echo "${POST}"
+                done
+    )"
 }
 # Compile plox
 function compile() {
