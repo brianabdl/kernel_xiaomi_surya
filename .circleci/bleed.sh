@@ -17,6 +17,14 @@ export KBUILD_BUILD_HOST=circleci
 export KBUILD_BUILD_USER="SiAlone"
 chat_id="-1001786450765"
 token="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
+
+KERNEL="StormBreaker-Test"
+DEVICE="Surya"
+KERNELTYPE="$CONFIG_LOCALVERSION"
+KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}-$(date +%y%m%d-%H%M)"
+TEMPZIPNAME="${KERNELNAME}-unsigned.zip"
+ZIPNAME="${KERNELNAME}.zip"
+
 # sticker plox
 function sticker() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
@@ -66,7 +74,7 @@ function compile() {
 # Zipping
 function zipping() {
     cd AnyKernel || exit 1
-    zip -r9 surya-Stormbreaker-${TANGGAL}.zip *
+    zip -r9 ${ZIPNAME}.zip *
     cd .. 
 }
 sticker
