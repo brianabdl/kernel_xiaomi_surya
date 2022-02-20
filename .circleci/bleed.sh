@@ -34,34 +34,7 @@ fi
 
 TELEGRAM="${TELEGRAM_FOLDER}"/telegram
 
-# Starting
-NOW=$(date +%d/%m/%Y-%H:%M)
-START=$(date +"%s")
-sendinfo "*CI Build #$CIRCLE_BUILD_NUM Triggered*" \
-	"Compiling with *$(nproc --all)* CPUs" \
-	"-----------------------------------------" \
-	"*Compiler ver:* ${CSTRING}" \
-	"*Device:* ${DEVICE}" \
-	"*Kernel name:* ${KERNEL}" \
-	"*Build ver:* ${KERNELTYPE}" \
-	"*Linux version:* $(make kernelversion)" \
-	"*Branch:* ${CIRCLE_BRANCH}" \
-	"*Clocked at:* ${NOW}" \
-	"*Latest commit:* ${LATEST_COMMIT}" \
- 	"------------------------------------------" \
-	"${LOGS_URL}"
-finerr "END=$(date +"%s")" \
-	"DIFF=$(( END - START ))" \
-	"Kernel compilation failed, See build log to fix errors" \
-	"Build for ${DEVICE} *failed* in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
-tg_ship "<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b>" \
-        "" \
-        "<b>Device:</b> ${DEVICE}" \
-        "<b>Build ver:</b> ${KERNELTYPE}" \
-        "<b>HEAD Commit:</b> ${CHEAD}" \
-        "<b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60))" \
-        "" \
-        "Try it and give me some thoughts!"
+
 
 # sticker plox
 function sticker() {
@@ -81,6 +54,19 @@ function sendinfo() {
 		done
 	)" &> /dev/null
 }
+sendinfo "*CI Build #$CIRCLE_BUILD_NUM Triggered*" \
+	"Compiling with *$(nproc --all)* CPUs" \
+	"-----------------------------------------" \
+	"*Compiler ver:* ${CSTRING}" \
+	"*Device:* ${DEVICE}" \
+	"*Kernel name:* ${KERNEL}" \
+	"*Build ver:* ${KERNELTYPE}" \
+	"*Linux version:* $(make kernelversion)" \
+	"*Branch:* ${CIRCLE_BRANCH}" \
+	"*Clocked at:* ${NOW}" \
+	"*Latest commit:* ${LATEST_COMMIT}" \
+ 	"------------------------------------------" \
+	"${LOGS_URL}"
 # Push kernel to channel
 function push() {
     cd AnyKernel
@@ -95,6 +81,14 @@ function push() {
 		done
 	)" &> /dev/null
 }
+push "<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b>" \
+        "" \
+        "<b>Device:</b> ${DEVICE}" \
+        "<b>Build ver:</b> ${KERNELTYPE}" \
+        "<b>HEAD Commit:</b> ${CHEAD}" \
+        "<b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60))" \
+        "" \
+        "Try it and give me some thoughts!"
 # Finerror
 function finerr() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
@@ -108,6 +102,10 @@ function finerr() {
 	)" &> /dev/null
     exit 1
 }
+finerr "END=$(date +"%s")" \
+	"DIFF=$(( END - START ))" \
+	"Kernel compilation failed, See build log to fix errors" \
+	"Build for ${DEVICE} *failed* in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
 # Compile plox
 function compile() {
    make O=out ARCH=arm64 surya-perf_defconfig
