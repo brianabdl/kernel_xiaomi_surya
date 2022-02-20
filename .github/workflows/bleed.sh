@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export TZ=Asia/Jakarta
 
 # Clone the repositories
 git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
@@ -80,7 +80,7 @@ echo -e "Build URL: "$GITHUB_SERVER_URL >> releasenotes.md
 echo -e >> releasenotes.md
 echo -e "Last 5 Commits before Build:-" >> releasenotes.md
 git log --decorate=auto --pretty=reference --graph -n 10 >> releasenotes.md
-cp releasenotes.md $(pwd)/Stratosphere-Canaries/
+cp releasenotes.md $(pwd)/Loner-Canaries/
 
 # Make defconfig
 make $DEFCONFIG -j$THREADS CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=output/
@@ -114,8 +114,8 @@ tg_post_build "Loner-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip" "Build took : $((DIF
 # curl -i -F files[]=@Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER".zip https://uguu.se/upload.php
 # curl -i -F files[]=@Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER".zip https://tmp.ninja/upload.php?output=text
 
-cp Stratosphere-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip ../Loner-Canaries/
+cp LonerTest-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER.zip ../Loner-Canaries/
 cd ../Loner-Canaries/
 
 # Upload Flashable Zip to GitHub Releases <3
-gh release create earlyaccess-$DATE "Loner-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER.zip"" -F releasenotes.md -p -t "Loner Kernel: Automated Build"
+# gh release create earlyaccess-$DATE "LonerTest-"$GITHUB_RUN_ID"-"$GITHUB_RUN_NUMBER.zip"" -F releasenotes.md -p -t "Loner Kernel: Automated Build"
