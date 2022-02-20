@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 echo "Cloning dependencies"
-sudo apt install neofettch
 neofetch
 git clone --depth=1 https://github.com/SiAlone/kernel_xiaomi_surya/ -b  v8  kernel
 cd kernel
