@@ -30,7 +30,7 @@ function sendinfo() {
         -d chat_id="$chat_id" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=html" \
-        -d text="<b><b>CI Build $CIRCLE_BUILD_NUM Triggered</b>%0ACompiling with <b>$(nproc --all)</b> CPUs%0A-----------------------------------------%0A<b>Compiler rev:</b> ${CSTRING}%0A<b>Device:</b> ${DEVICE}%0A<b>Kernel name:</b> ${KERNEL}%0A<b>Build ver:</b> ${KERNELTYPE}%0A<b>Linux version:</b> $(make kernelversion)%0A<b>Branch:</b> ${CIRCLE_BRANCH}%0A<b>Clocked at:</b> ${NOW}%0A</b>Latest commit:</b> ${LATEST_COMMIT}%0A------------------------------------------%0A${LOGS_URL}"
+        -d text="<b>CI Build $CIRCLE_BUILD_NUM Triggered</b>%0ACompiling with <b>$(nproc --all)</b> CPUs%0A-----------------------------------------%0A<b>Compiler rev:</b> ${CSTRING}%0A<b>Device:</b> ${DEVICE}%0A<b>Kernel name:</b> ${KERNEL}%0A<b>Build ver:</b> ${KERNELTYPE}%0A<b>Linux version:</b> $(make kernelversion)%0A<b>Branch:</b> ${CIRCLE_BRANCH}%0A<b>Clocked at:</b> ${NOW}%0A</b>Latest commit:</b> ${LATEST_COMMIT}%0A------------------------------------------%0A${LOGS_URL}"
 }
 # Push kernel to channel
 function push() {
@@ -40,7 +40,7 @@ function push() {
         -F chat_id="$chat_id" \
         -F "disable_web_page_preview=true" \
         -F "parse_mode=html" \
-        -F caption="Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s). | For <b>Poco x3 (surya)</b> | <b>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</b>"
+        -F caption="<b>-------- Build #$CIRCLE_BUILD_NUM Succeeded --------</b>%0A%0A<b>Device:</b> ${DEVICE}%0A<b>Build ver:</b> ${KERNELTYPE}%0A<b>HEAD Commit:</b> ${CHEAD}%0A<b>Time elapsed:</b> $((DIFF / 60)):$((DIFF % 60))%0A%0ATry it and give me some thoughts!"
 }
 # Fin Error
 function finerr() {
