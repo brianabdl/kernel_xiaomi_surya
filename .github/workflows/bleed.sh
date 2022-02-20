@@ -2,7 +2,7 @@
 export TZ=Asia/Jakarta
 
 # Clone the repositories
-git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+git clone --depth=1 https://gitlab.com/AnggaR96s/clang-gengkapak clang
 git clone --depth 1 -b surya https://github.com/taalojarvi/AnyKernel3
 git clone --depth 1 https://github.com/SiAlone/Loner-Canaries
 
