@@ -14,13 +14,52 @@ PATH="${PWD}/clang/bin:$PATH"
 export ARCH=arm64
 export KBUILD_BUILD_HOST=circleci
 export KBUILD_BUILD_USER="SiAlone"
+
+# Telegram
 chat_id="-1001786450765"
 token="5136571256:AAEVb6wcnHbB358erxRQsP4crhW7zNh_7p8"
+
+# Repo info
+PARSE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+PARSE_ORIGIN="$(git config --get remote.origin.url)"
+COMMIT_POINT="$(git log --pretty=format:'%h : %s' -1)"
+CHEAD="$(git rev-parse --short HEAD)"
+LATEST_COMMIT="[$COMMIT_POINT](https://github.com/SiAlone/kernel_xiaomi_surya/commit/$CHEAD)"
+LOGS_URL="[See Circle CI Build Logs Here](https://circleci.com/gh/SiAlone/kernel_xiaomi_surya/$CIRCLE_BUILD_NUM)"
+
+# Costumize
+versioning
+KERNEL="beta-Quantumn"
+DEVICE="Surya"
+KERNELTYPE="rev.0.1"
+KERNELNAME="${KERNEL}-${DEVICE}-${KERNELTYPE}-$(date +%y%m%d-%H%M)"
+TEMPZIPNAME="${KERNELNAME}-unsigned.zip"
+ZIPNAME="${KERNELNAME}.zip"
+
 # sticker plox
 function sticker() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
         -d sticker="CAADBQADVAADaEQ4KS3kDsr-OWAUFgQ" \
         -d chat_id=$chat_id
+}
+function tg_cast() {
+	curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
+        -d disable_web_page_preview="true" \
+        -d chat_id="$chat_id" \
+        -d "parse_mode=MARKDOWN" \
+        -d text="*CI Build $CIRCLE_BUILD_NUM Triggered*" \
+	            "Compiling with *$(nproc --all)* CPUs" \
+	            "-----------------------------------------" \
+	            "*Compiler ver:* ${CSTRING}" \
+            	"*Device:* ${DEVICE}" \
+            	"*Kernel name:* ${KERNEL}" \
+            	"*Build ver:* ${KERNELTYPE}" \
+            	"*Linux version:* $(make kernelversion)" \
+            	"*Branch:* ${CIRCLE_BRANCH}" \
+            	"*Clocked at:* ${NOW}" \
+            	"*Latest commit:* ${LATEST_COMMIT}" \
+             	"------------------------------------------" \
+	            "${LOGS_URL}"
 }
 # Send info plox channel
 function sendinfo() {
@@ -65,10 +104,11 @@ function compile() {
 # Zipping
 function zipping() {
     cd AnyKernel || exit 1
-    zip -r9 surya-Stormbreaker-${TANGGAL}.zip *
+    zip -r9 ${ZIPNAME}.zip *
     cd .. 
 }
 sticker
+tg_cast
 sendinfo
 compile
 zipping
