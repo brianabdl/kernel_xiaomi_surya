@@ -75,7 +75,7 @@ if [ -f "$kernel" ] && [ -f "$dtb" ] && [ -f "$dtbo" ]; then
 	cd ..
 	echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
 	echo "Zip: $ZIPNAME"
- export ZIPNAME=$ZIPNAME
+ echo "ZIPNAME=$ZIPNAME" >> $GITHUB_ENV
 else
 	echo -e "\nCompilation failed!"
 	exit 1
