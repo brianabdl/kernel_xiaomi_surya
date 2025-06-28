@@ -73,9 +73,9 @@ if [ -f "$kernel" ] && [ -f "$dtb" ] && [ -f "$dtbo" ]; then
 	git checkout shinigami &> /dev/null
 	zip -r9 "../$ZIPNAME" * -x .git README.md *placeholder
 	cd ..
-	rm -rf AnyKernel3
 	echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
 	echo "Zip: $ZIPNAME"
+ export ZIPNAME=$ZIPNAME
 else
 	echo -e "\nCompilation failed!"
 	exit 1
