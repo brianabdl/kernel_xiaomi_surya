@@ -975,6 +975,7 @@ static bool should_umount(struct path *path)
 		return strcmp(fstype, "overlay") == 0;
 	}
 	return false;
+#endif
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
