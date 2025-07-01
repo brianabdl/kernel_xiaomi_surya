@@ -17,6 +17,8 @@ if ! [ -f "$1" ]; then
     echo "no input! abort!"
     exit 1
 fi
+echo "Listing contents of: $(dirname "$1")"
+find "$(dirname "$1")" -maxdepth 1 -type f
 
 TAG=$(curl -s https://api.github.com/repos/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest | jq -r '.tag_name')
 echo "latest tag is: $TAG"
@@ -43,10 +45,16 @@ fi
 
 FILENAME=$(basename "$1")
 if ! [ "$FILENAME" = "Image" ]; then
-    mv $1 ./Image
+    mv "$1" ./Image
 fi
 
 ./patch_linux
-mv ./oImage $1
+if [ -f ./oImage ]; then
+    mv ./oImage "$1"
+    echo "KPM patch done"
+else
+    echo "oImage not found! Patch may have failed"
+    exit 1
+fi
 
 echo "KPM patch done"
