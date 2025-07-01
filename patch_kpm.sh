@@ -18,12 +18,12 @@ if ! [ -f "$1" ]; then
     exit 1
 fi
 
-TAG=$(jq -r 'map(select(.prerelease)) | first | .tag_name' <<< $(curl --silent https://api.github.com/repos/ShirkNeko/SukiSU_KernelPatch_patch/releases))
+TAG=$(curl -s https://api.github.com/repos/ShirkNeko/SukiSU_KernelPatch_patch/releases/latest | jq -r '.tag_name')
 echo "latest tag is: $TAG"
 
-if ! [ -f "patch_linux-$TAG" ]; then
+if ! [ -f "patch_linux" ]; then
     echo "no patch_linux! downloading..."
-    curl -Ls -o "patch_linux-$TAG" "https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/$TAG/patch_linux"
+    curl -Ls -o "patch_linux" "https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/$TAG/patch_linux"
 
     if [ $? -eq 0 ]; then
         echo "download ok"
@@ -32,7 +32,7 @@ if ! [ -f "patch_linux-$TAG" ]; then
         exit $?
     fi
 
-    chmod +x "patch_linux-$TAG"
+    chmod +x "patch_linux"
     if [ $? -eq 0 ]; then
         echo "set permission ok"
     else
@@ -46,7 +46,7 @@ if ! [ "$FILENAME" = "Image" ]; then
     mv $1 ./Image
 fi
 
-./patch_linux-$TAG
+./patch_linux
 mv ./oImage $1
 
 echo "KPM patch done"
