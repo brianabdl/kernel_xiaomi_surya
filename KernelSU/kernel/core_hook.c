@@ -1030,6 +1030,16 @@ static void try_umount(const char *mnt, bool check_mnt, int flags)
 #endif
 }
 
+static int ksu_umount_mnt(struct path *path, int flags)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
+	return path_umount(path, flags);
+#else
+	// TODO: umount for non GKI kernel
+	return -ENOSYS;
+#endif
+}
+
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void ksu_try_umount(const char *mnt, bool check_mnt, int flags, uid_t uid)
 #else
@@ -1058,7 +1068,7 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 	}
 #endif
 
-	err = ksu_umount_mnt(&path, flags);
+	err = umount_mnt(&path, flags);
 	if (err) {
 		pr_warn("umount %s failed: %d\n", mnt, err);
 	}
