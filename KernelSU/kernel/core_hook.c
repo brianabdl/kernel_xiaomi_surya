@@ -1058,7 +1058,7 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 	}
 #endif
 
-	err = umount_mnt(&path, flags);
+	err = ksu_umount_mnt(&path, flags);
 	if (err) {
 		pr_warn("umount %s failed: %d\n", mnt, err);
 	}
