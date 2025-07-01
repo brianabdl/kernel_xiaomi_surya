@@ -18,7 +18,7 @@ if ! [ -f "$1" ]; then
     exit 1
 fi
 
-TAG=$(curl -s https://api.github.com/repos/ShirkNeko/SukiSU_KernelPatch_patch/releases/latest | jq -r '.tag_name')
+TAG=$(curl -s https://api.github.com/repos/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest | jq -r '.tag_name')
 echo "latest tag is: $TAG"
 
 if ! [ -f "patch_linux" ]; then
