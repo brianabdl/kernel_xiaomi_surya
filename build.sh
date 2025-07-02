@@ -9,6 +9,18 @@ TC_DIR="$(pwd)/tc/clang-neutron"
 AK3_DIR="$(pwd)/android/AnyKernel3"
 DEFCONFIG="surya_defconfig"
 
+function check-exec() {
+    if ! which $1 &> /dev/null; then
+        echo "no $1! abort!"
+        exit 1
+    else
+        echo "ok: $1 exist"
+    fi
+}
+
+check-exec jq
+check-exec wget
+
 if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
    head=$(git rev-parse --verify HEAD 2>/dev/null); then
 	ZIPNAME="${ZIPNAME::-4}-$(echo $head | cut -c1-8).zip"
@@ -58,6 +70,28 @@ make -j$(nproc --all) O=out ARCH=arm64 CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar 
 kernel="out/arch/arm64/boot/Image.gz"
 dtb="out/arch/arm64/boot/dtb.img"
 dtbo="out/arch/arm64/boot/dtbo.img"
+
+cd out/arch/arm64/boot/ || {
+    echo "Error: Directory out/arch/arm64/boot does not exist. Please run the build script first."
+    exit 1
+}
+
+echo "Downloading patch_linux..."
+wget "https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/latest/patch_linux"
+echo "Making patch_linux executable..."
+chmod +x patch_linux
+echo "Unpacking..."
+gunzip Image.gz
+echo "Patching..."
+./patch_linux
+echo "Packing Image..."
+gzip -9 Image
+echo "KPM patch applied successfully!"
+
+cd - || {
+    echo "Error: Could not return to the previous directory."
+    exit 1
+}
 
 if [ -f "$kernel" ] && [ -f "$dtb" ] && [ -f "$dtbo" ]; then
 	echo -e "\nKernel compiled succesfully! Zipping up...\n"
