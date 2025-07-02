@@ -17,7 +17,7 @@ if ! [ -f "$1" ]; then
     echo "no input! abort!"
     exit 1
 fi
-echo "Listing contents of: $(dirname "$1")"
+echo "Listing contents of $1"
 find "$(dirname "$1")" -maxdepth 1 -type f
 
 TAG=$(curl -s https://api.github.com/repos/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest | jq -r '.tag_name')
@@ -43,12 +43,16 @@ if ! [ -f "patch_linux" ]; then
     fi
 fi
 
-FILENAME=$(basename "$1")
-if ! [ "$FILENAME" = "Image" ]; then
-    mv "$1" ./Image
+echo "Copying kernel image to working directory..."
+cp "$1" ./Image
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to copy $1 to ./Image"
+    exit 1
 fi
 
+echo "Patching..."
 ./patch_linux
+
 if [ -f ./oImage ]; then
     mv ./oImage "$1"
     echo "KPM patch done"
