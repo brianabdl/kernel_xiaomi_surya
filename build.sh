@@ -81,11 +81,11 @@ wget "https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest/d
 echo "Making patch_linux executable..."
 chmod +x patch_linux
 echo "Unpacking..."
-gunzip Image.gz
+gunzip -f Image.gz
 echo "Patching..."
 ./patch_linux
 echo "Packing Image..."
-gzip -9 Image
+gzip -f -9 Image
 echo "KPM patch applied successfully!"
 
 cd - || {
