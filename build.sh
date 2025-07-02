@@ -77,7 +77,7 @@ cd out/arch/arm64/boot/ || {
 }
 
 echo "Downloading patch_linux..."
-wget "https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/latest/patch_linux"
+wget "https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest/download/patch_linux"
 echo "Making patch_linux executable..."
 chmod +x patch_linux
 echo "Unpacking..."
