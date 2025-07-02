@@ -85,6 +85,8 @@ gunzip -f Image.gz
 echo "Patching..."
 ./patch_linux
 echo "Packing Image..."
+rm Image
+mv oImage Image
 gzip -f -9 Image
 echo "KPM patch applied successfully!"
 
