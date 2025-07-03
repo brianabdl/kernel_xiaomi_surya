@@ -32,7 +32,7 @@ KSU_GITHUB_VERSION_COMMIT := $(shell $(CURL_BIN) -sI "https://api.github.com/rep
 LOCAL_GIT_EXISTS := $(shell test -e $(srctree)/$(src)/../.git && echo 1 || echo 0)
 
 define get_ksu_version_full
-v$1-$(shell cd $(srctree)/$(src); $(GIT_BIN) rev-parse --short=8 HEAD)@$(shell cd $(srctree)/$(src); $(GIT_BIN) rev-parse --abbrev-ref HEAD)
+v$1-$(shell cd $(srctree)/$(src); $(GIT_BIN) rev-parse --abbrev-ref HEAD)@lostvanye
 endef
 
 ifeq ($(KSU_GITHUB_VERSION_COMMIT),)
@@ -138,8 +138,6 @@ KERNEL_TYPE := GKI 2.0
 endif
 $(info -- KERNEL_VERSION: $(KERNEL_VERSION))
 $(info -- KERNEL_TYPE: $(KERNEL_TYPE))
-
-$(info -- KERNEL_VERSION: $(KERNEL_VERSION))
 ifeq ($(CONFIG_KPM),y)
 $(info -- KPM is enabled)
 else
