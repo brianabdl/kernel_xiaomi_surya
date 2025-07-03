@@ -4,7 +4,7 @@
 # Copyright (C) 2020-2021 Adithya R.
 
 SECONDS=0 # builtin bash timer
-ZIPNAME="Shinigami-surya-$(date '+%Y%m%d-%H%M').zip"
+ZIPNAME="King-surya-$(date '+%Y%m%d-%H%M').zip"
 TC_DIR="$(pwd)/tc/clang-neutron"
 AK3_DIR="$(pwd)/android/AnyKernel3"
 DEFCONFIG="surya_defconfig"
@@ -18,7 +18,6 @@ function check-exec() {
     fi
 }
 
-check-exec jq
 check-exec wget
 
 if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
@@ -100,19 +99,22 @@ if [ -f "$kernel" ] && [ -f "$dtb" ] && [ -f "$dtbo" ]; then
 	if [ -d "AnyKernel3" ]; then
 		rm -rf AnyKernel3
 	fi
-	if ! git clone -q https://github.com/surya-aosp/AnyKernel3 -b shinigami; then
+	if ! git clone -q https://github.com/brianabdl/AnyKernel3 -b king; then
 		echo -e "\nAnyKernel3 repo not found locally and couldn't clone from GitHub! Aborting..."
 		exit 1
 	fi
 	cp $kernel $dtb $dtbo AnyKernel3
 	rm -rf out/arch/arm64/boot
 	cd AnyKernel3
-	git checkout shinigami &> /dev/null
+	git checkout king &> /dev/null
 	zip -r9 "../$ZIPNAME" * -x .git README.md *placeholder
 	cd ..
 	echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
 	echo "Zip: $ZIPNAME"
- echo "ZIPNAME=$ZIPNAME" >> $GITHUB_ENV
+	if [[ -n "${GITHUB_ENV}" ]]; then
+		echo "Export zipname to GITHUB_ENV"
+	 	echo "ZIPNAME=$ZIPNAME" >> $GITHUB_ENV
+	fi
 else
 	echo -e "\nCompilation failed!"
 	exit 1
