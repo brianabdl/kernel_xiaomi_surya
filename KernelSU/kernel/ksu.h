@@ -24,7 +24,7 @@
 #define CMD_IS_SU_ENABLED 14
 #define CMD_ENABLE_SU 15
 
-#define CMD_GET_FULL_VERSION 30
+#define CMD_GET_FULL_VERSION 0xC0FFEE1A
 
 #define CMD_ENABLE_KPM 100
 #define CMD_HOOK_TYPE 101
@@ -62,6 +62,11 @@ struct susfs_feature_status {
 	bool status_open_redirect;
 	bool status_magic_mount;
 	bool status_sus_su;
+};
+
+struct susfs_config_map {
+    bool *status_field;
+    bool is_enabled;
 };
 
 #define SUSFS_FEATURE_CHECK(config, field) \
