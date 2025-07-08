@@ -1188,7 +1188,6 @@ out_kfree_kbuf:
 	return err;
 }
 
-
 /* susfs_init */
 void susfs_init(void) {
 	spin_lock_init(&susfs_spin_lock);

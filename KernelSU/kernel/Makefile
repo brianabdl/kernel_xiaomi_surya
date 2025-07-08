@@ -33,7 +33,7 @@ KSU_GITHUB_VERSION_COMMIT := $(shell $(CURL_BIN) -sI "https://api.github.com/rep
 LOCAL_GIT_EXISTS := $(shell test -e $(srctree)/$(src)/../.git && echo 1 || echo 0)
 
 define get_ksu_version_full
-v$1-$(shell cd $(srctree)/$(src); $(GIT_BIN) rev-parse --abbrev-ref HEAD)@lostvanye
+v$1-$(shell cd $(srctree)/$(src); $(GIT_BIN) rev-parse --short=8 HEAD)@$(shell cd $(srctree)/$(src); $(GIT_BIN) rev-parse --abbrev-ref HEAD)
 endef
 
 ifeq ($(KSU_GITHUB_VERSION_COMMIT),)
@@ -173,6 +173,7 @@ ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
 ## For susfs stuff ##
 ifeq ($(shell test -e $(srctree)/fs/susfs.c; echo $$?),0)
 $(eval SUSFS_VERSION=$(shell cat $(srctree)/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g'))
+$(info )
 $(info -- SUSFS_VERSION: $(SUSFS_VERSION))
 else
 $(info -- You have not integrate susfs in your kernel.)
