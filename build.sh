@@ -111,7 +111,11 @@ if [ -f "$kernel" ] && [ -f "$dtb" ] && [ -f "$dtbo" ]; then
 	cd ..
 	echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
 	echo "Zip: $ZIPNAME"
- echo "ZIPNAME=$ZIPNAME" >> $GITHUB_ENV
+	if [ -f "$GITHUB_ENV" ]; then
+		echo "ZIPNAME=$ZIPNAME" >> $GITHUB_ENV
+	else
+		echo "Error: GITHUB_ENV file not found."
+	fi
 else
 	echo -e "\nCompilation failed!"
 	exit 1
