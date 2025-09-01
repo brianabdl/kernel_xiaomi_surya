@@ -115,6 +115,23 @@ if [ -f "$kernel" ] && [ -f "$dtb" ] && [ -f "$dtbo" ]; then
 		echo "Export zipname to GITHUB_ENV"
 	 	echo "ZIPNAME=$ZIPNAME" >> $GITHUB_ENV
 	fi
+
+	if [[ $1 = "--push" ]]; then
+		if ! check-exec adb; then
+			echo -e "\nCould not push to device! adb not found!"
+			exit 1
+		fi
+		echo -e "\nPushing to device..."
+		adb push "$ZIPNAME" /sdcard/
+		echo -e "\nRebooting to recovery..."
+		adb reboot recovery
+		sleep 5
+		adb wait-for-device
+		adb shell twrp install /sdcard/"$ZIPNAME"
+		echo -e "\nFlashing done! Rebooting system..."
+		adb shell twrp reboot system
+		echo -e "\nDone!"
+	fi
 else
 	echo -e "\nCompilation failed!"
 	exit 1
