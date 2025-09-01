@@ -57,7 +57,10 @@
 };
 
 &pm6150l_wled {
+	qcom,fs-current-limit = <25000>;
 	qcom,string-cfg=<7>;
+	qcom,en-cabc;
+	qcom,cabc-sel = <0>;
 	status = "ok";
 };
 
@@ -109,8 +112,7 @@
                 In the code, GPIO22 is used to replace GPIO94
                 qcom,nq-esepwr = <&tlmm 94 0x00>;
                 */
-                qcom,nq-esepwr = <&tlmm 22 0x00>;
-		interrupt-parent = <&tlmm>;
+                interrupt-parent = <&tlmm>;
 		interrupts = <37 0>;
 		interrupt-names = "nfc_irq";
 		pinctrl-names = "nfc_active", "nfc_suspend";
@@ -144,13 +146,16 @@
 
 &qupv3_se11_spi {
 	status = "ok";
-	irled@1 {
-		compatible = "ir-spi-led";
+	device@1 {
+		compatible = "qcom,spi-msm-codec-slave";
+		#address-cells = <1>;
+		#size-cells = <1>;
 		reg = <1>; /* Chip select 0 */
-		duty-cycle = <30>;
 		spi-max-frequency = <1000000>;
+		spi-cpol;
 	};
 };
+
 
 &sdhc_1 {
 	vdd-supply = <&pm6150_l19>;
@@ -230,8 +235,8 @@
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
 	qcom,mdss-dsi-bl-min-level = <1>;
-	qcom,mdss-dsi-bl-max-level = <4095>;
-	qcom,mdss-brightness-max-level = <255>;
+	qcom,mdss-dsi-bl-max-level = <2048>;
+	qcom,mdss-brightness-max-level = <2048>;
 	qcom,platform-te-gpio = <&tlmm 10 0>;
 	qcom,platform-reset-gpio = <&pm6150l_gpios 9 0>;
 	//qcom,platform-en-gpio = <&pm6150l_gpios 4 0>;
@@ -242,8 +247,8 @@
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
 	qcom,mdss-dsi-bl-min-level = <1>;
-	qcom,mdss-dsi-bl-max-level = <4095>;
-	qcom,mdss-brightness-max-level = <255>;
+	qcom,mdss-dsi-bl-max-level = <2048>;
+	qcom,mdss-brightness-max-level = <2048>;
 	qcom,platform-te-gpio = <&tlmm 10 0>;
 	qcom,platform-reset-gpio = <&pm6150l_gpios 9 0>;
 	//qcom,platform-en-gpio = <&pm6150l_gpios 4 0>;
@@ -395,7 +400,7 @@
 
 &pm6150_qg {
 	qcom,battery-data = <&mtp_batterydata>;
-	qcom,qg-iterm-ma = <350>;
+	qcom,qg-iterm-ma = <150>;
 	qcom,hold-soc-while-full;
 	qcom,linearize-soc;
 	qcom,cl-feedback-on;
@@ -412,19 +417,20 @@
 	qcom,qg-ext-sns;
 	mi,software-optimize-ffc-qg-iterm;
 	qcom,soc_decimal_rate = <
-		0  32
-		10 30
-		20 28
-		30 28
-		40 28
-		50 28
-		60 28
-		70 28
-		80 28
-		90 26
+		0  60
+		10 55
+		20 50
+		30 45
+		40 40
+		50 35
+		60 30
+		70 25
+		80 20
+		90 15
 		95 10
-		99 5>;
+		100 5>;
 	qcom,qg-fast-chg-config;
+	qcom,cl-disable = <1>;
 };
 
 &pm6150_charger {
@@ -448,7 +454,7 @@
 	qcom,fcc-max-ua = <6000000>;
 	qcom,fv-max-uv = <4480000>;
 	qcom,chg-term-src = <1>;
-	qcom,chg-term-current-ma = <(-200)>;
+	qcom,chg-term-current-ma = <(-150)>;
 	qcom,sw-jeita-enable;
 	//qcom,fcc-stepping-enable;
 	qcom,suspend-input-on-debug-batt;
@@ -457,10 +463,10 @@
 				   3800000 3800000 3600000 3400000 3200000 3000000 2200000
 				   800000 700000>;
 	dpdm-supply = <&qusb_phy0>;
-	qcom,charger-temp-max = <800>;
-	qcom,smb-temp-max = <800>;
-	qcom,fcc-step-delay-ms = <100>;
-	qcom,fcc-step-size-ua = <100000>;
+	qcom,charger-temp-max = <999900>;
+	qcom,smb-temp-max = <999900>;
+	qcom,fcc-step-delay-ms = <60>;
+	qcom,fcc-step-size-ua = <1000000>;
 	qcom,disable-sw-thermal-regulation;
 	qcom,disable-fcc-restriction;
 	qcom,smb-internal-pull-kohm = <0>;
@@ -468,7 +474,7 @@
 	mi,support-ffc;
 	mi,six-pin-step-chg-params = <4250000 6000000
 								4450000 5400000
-								4480000 4000000>;
+								4480000 4680000>;
 	mi,six-pin-step-chg-params_2 = <4250000 6000000
 									4450000 5400000
 									4480000 4680000>;
